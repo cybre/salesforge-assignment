@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  server:
+    image: sequence-server
+    restart: on-failure:10
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=sequence
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD_FILE=/run/secrets/db_password
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    secrets:
+      - db_password
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - PGUSER=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB=sequence
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    secrets:
+      - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+secrets:
+   db_password:
+     file: db_password.txt
+volumes:
+  postgres-data:
