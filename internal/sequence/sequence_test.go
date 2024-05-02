@@ -468,6 +468,7 @@ func TestService_UpdateStep(t *testing.T) {
 		{
 			name: "Valid step",
 			step: sequence.Step{
+				ID:      1,
 				Subject: "Subject 1",
 				Content: "Content 1",
 			},
@@ -477,7 +478,17 @@ func TestService_UpdateStep(t *testing.T) {
 		{
 			name: "Invalid step",
 			step: sequence.Step{
+				ID:      1,
 				Subject: "",
+				Content: "Content 2",
+			},
+			expectedErr: sequence.ErrStepValidation,
+			repository:  repo,
+		},
+		{
+			name: "Missing ID",
+			step: sequence.Step{
+				Subject: "Subject 1",
 				Content: "Content 2",
 			},
 			expectedErr: sequence.ErrStepValidation,
@@ -486,6 +497,7 @@ func TestService_UpdateStep(t *testing.T) {
 		{
 			name: "Step not found",
 			step: sequence.Step{
+				ID:      1,
 				Subject: "Subject 3",
 				Content: "Content 3",
 			},
@@ -499,6 +511,7 @@ func TestService_UpdateStep(t *testing.T) {
 		{
 			name: "Failed to update step",
 			step: sequence.Step{
+				ID:      1,
 				Subject: "Subject 4",
 				Content: "Content 4",
 			},

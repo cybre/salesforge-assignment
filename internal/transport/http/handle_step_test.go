@@ -15,175 +15,84 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func TestUpdateStep_Success(t *testing.T) {
-	// Create a new Echo instance
-	e := echo.New()
-
-	// Create a new HTTP request with a JSON payload
-	reqBody := `{ "id": 1, "subject": "Test Subject", "content": "Test Content" }`
-	req := httptest.NewRequest(http.MethodPut, "/sequences", strings.NewReader(reqBody))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	// Create a mock sequence service
-	mockSequenceService := &testdata.MockSequenceService{
-		UpdateStepFn: func(ctx context.Context, seq sequence.Step) error {
-			return nil
+func TestUpdateStep(t *testing.T) {
+	tests := []struct {
+		name           string
+		requestBody    string
+		expectedStatus int
+		serviceError   error
+		idParamValue   string
+	}{
+		{
+			name:           "Success",
+			requestBody:    `{ "subject": "Test Subject", "content": "Test Content" }`,
+			expectedStatus: http.StatusOK,
+			idParamValue:   "1",
+		},
+		{
+			name:           "Invalid Request Body",
+			requestBody:    `{"}`,
+			expectedStatus: http.StatusBadRequest,
+			idParamValue:   "1",
+		},
+		{
+			name:           "Validation Error",
+			requestBody:    `{"subject": "Test Subject"}`,
+			expectedStatus: http.StatusBadRequest,
+			serviceError:   sequence.ErrStepValidation,
+			idParamValue:   "1",
+		},
+		{
+			name:           "Not Found Error",
+			requestBody:    `{"subject": "Test Subject", "content": "Test Content"}`,
+			expectedStatus: http.StatusBadRequest,
+			idParamValue:   "abc",
+		},
+		{
+			name:           "Unknown Error",
+			requestBody:    `{"subject": "Test Subject", "content": "Test Content"}`,
+			expectedStatus: http.StatusInternalServerError,
+			serviceError:   errors.New("test error"),
+			idParamValue:   "1",
 		},
 	}
 
-	// Create a new server instance with the mock sequence service
-	server := transporthttp.NewServer(mockSequenceService)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a new Echo instance
+			e := echo.New()
 
-	// Call the UpdateStep method
-	err := server.UpdateStep(c)
+			// Create a new HTTP request with a JSON payload
+			req := httptest.NewRequest(http.MethodPut, "/sequence/1", strings.NewReader(tt.requestBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetParamNames("id")
+			c.SetParamValues(tt.idParamValue)
 
-	// Check if there was no error
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
+			// Create a mock sequence service
+			mockSequenceService := &testdata.MockSequenceService{
+				UpdateStepFn: func(ctx context.Context, seq sequence.Step) error {
+					return tt.serviceError
+				},
+			}
 
-	// Check if the response status code is 200 OK
-	if rec.Code != http.StatusOK {
-		t.Errorf("expected status code %d, got %d", http.StatusOK, rec.Code)
-	}
-}
+			// Create a new server instance with the mock sequence service
+			server := transporthttp.NewServer(mockSequenceService)
 
-func TestUpdateStep_InvalidBody_BadRequest(t *testing.T) {
-	// Create a new Echo instance
-	e := echo.New()
+			// Call the UpdateStep method
+			err := server.UpdateStep(c)
 
-	// Create a new HTTP request with an invalid JSON payload
-	reqBody := `{"}`
-	req := httptest.NewRequest(http.MethodPut, "/step/1", strings.NewReader(reqBody))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues("1")
+			// Check if there was an error
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
 
-	// Create a mock sequence service
-	mockSequenceService := &testdata.MockSequenceService{
-		UpdateStepFn: func(ctx context.Context, seq sequence.Step) error {
-			return nil
-		},
-	}
-
-	// Create a new server instance with the mock sequence service
-	server := transporthttp.NewServer(mockSequenceService)
-
-	// Call the UpdateStep method
-	err := server.UpdateStep(c)
-
-	// Check if there was an error
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
-
-	// Check if the response status code is 400 Bad Request
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("expected status code %d, got %d", http.StatusBadRequest, rec.Code)
-	}
-}
-
-func TestUpdateStep_ValidationErr_BadRequest(t *testing.T) {
-	// Create a new Echo instance
-	e := echo.New()
-
-	// Create a new HTTP request with a JSON payload
-	reqBody := `{"subject": "Test Subject", "content": "Test Content"}`
-	req := httptest.NewRequest(http.MethodPut, "/sequences", strings.NewReader(reqBody))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	testErr := sequence.ErrStepValidation
-
-	// Create a mock sequence service
-	mockSequenceService := &testdata.MockSequenceService{
-		UpdateStepFn: func(ctx context.Context, seq sequence.Step) error {
-			return testErr
-		},
-	}
-
-	// Create a new server instance with the mock sequence service
-	server := transporthttp.NewServer(mockSequenceService)
-
-	// Call the UpdateStep method
-	server.UpdateStep(c)
-
-	// Check if the response status code is 400 Bad Request
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("expected status code %d, got %d", http.StatusBadRequest, rec.Code)
-	}
-}
-
-func TestUpdateStep_NotFoundErr_BadRequest(t *testing.T) {
-	// Create a new Echo instance
-	e := echo.New()
-
-	// Create a new HTTP request with a JSON payload
-	reqBody := `{"subject": "Test Subject", "content": "Test Content"}`
-	req := httptest.NewRequest(http.MethodPut, "/sequences", strings.NewReader(reqBody))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	testErr := sequence.ErrStepNotFound
-
-	// Create a mock sequence service
-	mockSequenceService := &testdata.MockSequenceService{
-		UpdateStepFn: func(ctx context.Context, seq sequence.Step) error {
-			return testErr
-		},
-	}
-
-	// Create a new server instance with the mock sequence service
-	server := transporthttp.NewServer(mockSequenceService)
-
-	// Call the UpdateStep method
-	server.UpdateStep(c)
-
-	// Check if the response status code is 400 Bad Request
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("expected status code %d, got %d", http.StatusBadRequest, rec.Code)
-	}
-}
-
-func TestUpdateStep_UnknownError_InternalServerError(t *testing.T) {
-	// Create a new Echo instance
-	e := echo.New()
-
-	// Create a new HTTP request with a JSON payload
-	reqBody := `{"subject": "Test Subject", "content": "Test Content"}`
-	req := httptest.NewRequest(http.MethodPut, "/step/1", strings.NewReader(reqBody))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	testErr := errors.New("test error")
-
-	// Create a mock sequence service
-	mockSequenceService := &testdata.MockSequenceService{
-		UpdateStepFn: func(ctx context.Context, seq sequence.Step) error {
-			return testErr
-		},
-	}
-
-	// Create a new server instance with the mock sequence service
-	server := transporthttp.NewServer(mockSequenceService)
-
-	// Call the UpdateStep method
-	server.UpdateStep(c)
-
-	// Check if the response status code is 500 Internal Server Error
-	if rec.Code != http.StatusInternalServerError {
-		t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, rec.Code)
+			// Check if the response status code matches the expected status code
+			if rec.Code != tt.expectedStatus {
+				t.Errorf("expected status code %d, got %d", tt.expectedStatus, rec.Code)
+			}
+		})
 	}
 }
 
@@ -207,99 +116,65 @@ func TestUpdateStepRequest_BuildStepModel(t *testing.T) {
 	}
 }
 
-func TestDeleteStep_Success(t *testing.T) {
-	// Create a new Echo instance
-	e := echo.New()
-
-	// Create a new HTTP request
-	req := httptest.NewRequest(http.MethodDelete, "/step/1", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	// Create a mock sequence service
-	mockSequenceService := &testdata.MockSequenceService{
-		DeleteStepFn: func(ctx context.Context, id int) error {
-			return nil
+func TestDeleteStep(t *testing.T) {
+	tests := []struct {
+		name           string
+		id             string
+		expectedStatus int
+		serviceError   error
+	}{
+		{
+			name:           "Success",
+			id:             "1",
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name:           "Invalid ID",
+			id:             "abc",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Unknown Error",
+			id:             "1",
+			expectedStatus: http.StatusInternalServerError,
+			serviceError:   errors.New("test error"),
 		},
 	}
 
-	// Create a new server instance with the mock sequence service
-	server := transporthttp.NewServer(mockSequenceService)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a new Echo instance
+			e := echo.New()
 
-	// Call the DeleteStep method
-	err := server.DeleteStep(c)
+			// Create a new HTTP request
+			req := httptest.NewRequest(http.MethodDelete, "/step/"+tt.id, nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetParamNames("id")
+			c.SetParamValues(tt.id)
 
-	// Check if there was no error
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
+			// Create a mock sequence service
+			mockSequenceService := &testdata.MockSequenceService{
+				DeleteStepFn: func(ctx context.Context, id int) error {
+					return tt.serviceError
+				},
+			}
 
-	// Check if the response status code is 204 No Content
-	if rec.Code != http.StatusNoContent {
-		t.Errorf("expected status code %d, got %d", http.StatusNoContent, rec.Code)
-	}
-}
+			// Create a new server instance with the mock sequence service
+			server := transporthttp.NewServer(mockSequenceService)
 
-func TestDeleteStep_InvalidID_BadRequest(t *testing.T) {
-	// Create a new Echo instance
-	e := echo.New()
+			// Call the DeleteStep method
+			err := server.DeleteStep(c)
 
-	// Create a new HTTP request with an invalid ID
-	req := httptest.NewRequest(http.MethodDelete, "/step/abc", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues("abc")
+			// Check if there was an error
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
 
-	// Create a mock sequence service
-	mockSequenceService := &testdata.MockSequenceService{
-		DeleteStepFn: func(ctx context.Context, id int) error {
-			return nil
-		},
-	}
-
-	// Create a new server instance with the mock sequence service
-	server := transporthttp.NewServer(mockSequenceService)
-
-	// Call the DeleteStep method
-	server.DeleteStep(c)
-
-	// Check if the response status code is 400 Bad Request
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("expected status code %d, got %d", http.StatusBadRequest, rec.Code)
-	}
-}
-
-func TestDeleteStep_UnknownError_InternalServerError(t *testing.T) {
-	// Create a new Echo instance
-	e := echo.New()
-
-	// Create a new HTTP request
-	req := httptest.NewRequest(http.MethodDelete, "/step/1", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	testErr := errors.New("test error")
-
-	// Create a mock sequence service
-	mockSequenceService := &testdata.MockSequenceService{
-		DeleteStepFn: func(ctx context.Context, id int) error {
-			return testErr
-		},
-	}
-
-	// Create a new server instance with the mock sequence service
-	server := transporthttp.NewServer(mockSequenceService)
-
-	// Call the DeleteStep method
-	server.DeleteStep(c)
-
-	// Check if the response status code is 500 Internal Server Error
-	if rec.Code != http.StatusInternalServerError {
-		t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, rec.Code)
+			// Check if the response status code matches the expected status code
+			if rec.Code != tt.expectedStatus {
+				t.Errorf("expected status code %d, got %d", tt.expectedStatus, rec.Code)
+			}
+		})
 	}
 }

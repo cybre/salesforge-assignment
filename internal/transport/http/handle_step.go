@@ -16,10 +16,6 @@ func (s Server) UpdateStep(e echo.Context) error {
 		return e.String(http.StatusBadRequest, err.Error())
 	}
 
-	if request.ID == 0 {
-		return e.String(http.StatusBadRequest, "invalid id")
-	}
-
 	model := request.BuildStepModel()
 	if err := s.sequenceService.UpdateStep(e.Request().Context(), model); err != nil {
 		if errors.Is(err, sequence.ErrStepValidation) {

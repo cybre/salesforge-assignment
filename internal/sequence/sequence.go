@@ -183,6 +183,10 @@ func (s Service) GetSequence(ctx context.Context, id int) (Sequence, error) {
 
 // UpdateStep updates a sequence step.
 func (s Service) UpdateStep(ctx context.Context, step Step) error {
+	if step.ID == 0 {
+		return fmt.Errorf("%w: id is required", ErrStepValidation)
+	}
+
 	if err := step.Validate(); err != nil {
 		return fmt.Errorf("%w: %s", ErrStepValidation, err)
 	}
