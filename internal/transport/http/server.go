@@ -99,4 +99,7 @@ func (s Server) RegisterRoutes(e *echo.Echo) {
 	e.GET("/sequence/:id", s.GetSequence)
 	e.PUT("/step/:id", s.UpdateStep)
 	e.DELETE("/step/:id", s.DeleteStep)
+	e.GET("/health", func(c echo.Context) error {
+		return c.NoContent(http.StatusOK)
+	})
 }

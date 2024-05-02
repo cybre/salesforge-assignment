@@ -345,6 +345,19 @@ func TestService_PatchSequence(t *testing.T) {
 			},
 		},
 		{
+			name: "Failed to get sequence",
+			patch: sequence.SequencePatch{
+				ID:   2,
+				Name: stringPtr("New Name"),
+			},
+			expectedErr: repoErr,
+			repository: testdata.MockRepo{
+				GetSequenceFn: func(ctx context.Context, id int) (sequence.Sequence, bool, error) {
+					return sequence.Sequence{}, false, repoErr
+				},
+			},
+		},
+		{
 			name: "Failed to update sequence",
 			patch: sequence.SequencePatch{
 				ID:   3,
@@ -360,6 +373,25 @@ func TestService_PatchSequence(t *testing.T) {
 				},
 				UpdateSequenceFn: func(ctx context.Context, seq sequence.Sequence) (bool, error) {
 					return false, repoErr
+				},
+			},
+		},
+		{
+			name: "Failed to update sequence (not found)",
+			patch: sequence.SequencePatch{
+				ID:   3,
+				Name: stringPtr("New Name"),
+			},
+			expectedErr: sequence.ErrSequenceNotFound,
+			repository: testdata.MockRepo{
+				GetSequenceFn: func(ctx context.Context, id int) (sequence.Sequence, bool, error) {
+					return sequence.Sequence{
+						ID:   3,
+						Name: "Old Name",
+					}, true, nil
+				},
+				UpdateSequenceFn: func(ctx context.Context, seq sequence.Sequence) (bool, error) {
+					return false, nil
 				},
 			},
 		},

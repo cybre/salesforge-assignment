@@ -43,10 +43,17 @@ func TestUpdateStep(t *testing.T) {
 			idParamValue:   "1",
 		},
 		{
-			name:           "Not Found Error",
+			name:           "Invalid ID param",
 			requestBody:    `{"subject": "Test Subject", "content": "Test Content"}`,
 			expectedStatus: http.StatusBadRequest,
 			idParamValue:   "abc",
+		},
+		{
+			name:           "Not Found Error",
+			requestBody:    `{"subject": "Test Subject", "content": "Test Content"}`,
+			expectedStatus: http.StatusBadRequest,
+			idParamValue:   "1",
+			serviceError:   sequence.ErrStepNotFound,
 		},
 		{
 			name:           "Unknown Error",
