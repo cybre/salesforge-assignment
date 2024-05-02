@@ -15,6 +15,7 @@ make run
 ```
 
 2. Access the API at the default port at `http://localhost:3000`
+3. Import the OpenAPI v3 spec into your API testing app of choice: `swagger.yaml`
 
 ## Additional Commands
 - To stop the containers: `make stop`

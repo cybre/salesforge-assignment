@@ -1,0 +1,157 @@
+openapi: 3.0.0
+info:
+  title: Sequence API
+  version: 1.0.0
+paths:
+  /sequence:
+    post:
+      summary: Create a new sequence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSequence'
+      responses:
+        '200':
+          description: Sequence created successfully
+        '400':
+          description: Input body is invalid
+        '500':
+          description: Internal error
+  /sequence/{id}:
+    get:
+      summary: Get a sequence by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sequence retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sequence'
+        '404':
+          description: Sequence not found
+        '500':
+          description: Internal error
+    patch:
+      summary: Patch a sequence
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SequencePatch'
+      responses:
+        '200':
+          description: Sequence updated successfully
+        '400':
+          description: Input body is invalid or sequence does not exist
+        '500':
+          description: Internal error
+  /step/{id}:
+    put:
+      summary: Update a step by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStep'
+      responses:
+        '200':
+          description: Step updated successfully
+        '400':
+          description: Input body is invalid or step does not exist
+        '500':
+          description: Internal error
+    delete:
+      summary: Delete a step by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Step deleted successfully
+        '500':
+          description: Internal error
+components:
+  schemas:
+    CreateSequence:
+      type: object
+      required:
+        - name
+        - openTrackingEnabled
+        - clickTrackingEnabled
+        - steps
+      properties:
+        name:
+          type: string
+        openTrackingEnabled:
+          type: boolean
+        clickTrackingEnabled:
+          type: boolean
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateStep'
+    Sequence:
+      allOf:
+        - $ref: '#/components/schemas/CreateSequence'
+        - type: object
+          properties:
+            id:
+              type: number
+            steps:
+              type: array
+              items:
+                $ref: '#/components/schemas/Step'
+    CreateStep:
+      type: object
+      required:
+        - subject
+        - content
+      properties:
+        subject:
+          type: string
+        content:
+          type: string
+    Step:
+      allOf:
+        - $ref: '#/components/schemas/CreateStep'
+        - type: object
+          properties:
+            id:
+              type: number
+    SequencePatch:
+      type: object
+      properties:
+        name:
+          type: string
+        openTrackingEnabled:
+          type: boolean
+        clickTrackingEnabled:
+          type: boolean
+servers:
+  - url: http://localhost:3000
+    variables: {}
