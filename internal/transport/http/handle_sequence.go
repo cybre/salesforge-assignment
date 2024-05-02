@@ -73,9 +73,9 @@ func (s Server) PatchSequence(e echo.Context) error {
 // PatchSequenceRequest represents the request body for patching a sequence.
 type PatchSequenceRequest struct {
 	ID            int     `param:"id"`
-	Name          *string `json:"name"`
-	OpenTracking  *bool   `json:"openTrackingEnabled"`
-	ClickTracking *bool   `json:"clickTrackingEnabled"`
+	Name          *string `json:"name,omitempty"`
+	OpenTracking  *bool   `json:"openTrackingEnabled,omitempty"`
+	ClickTracking *bool   `json:"clickTrackingEnabled,omitempty"`
 }
 
 // BuildSequencePatch builds a sequence patch domain object from the request.

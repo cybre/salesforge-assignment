@@ -26,21 +26,25 @@ func NewPostgresDB(config Config) (*sqlx.DB, error) {
 		return nil, err
 	}
 
+	return db, nil
+}
+
+// RunMigrations brings the database up to the latest version.
+func RunMigrations(db *sqlx.DB) error {
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{
-		DatabaseName:          config.Name,
 		MigrationsTable:       "schema_migrations",
 		MultiStatementEnabled: true,
 		MultiStatementMaxSize: postgres.DefaultMultiStatementMaxSize,
 	})
 	m, err := migrate.NewWithDatabaseInstance("file://migrations", "postgres", driver)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Migrate instance: %w", err)
+		return fmt.Errorf("failed to create Migrate instance: %w", err)
 	}
 
 	// Run migrations up to the latest one.
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
+		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	return db, nil
+	return nil
 }

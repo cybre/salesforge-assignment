@@ -25,12 +25,16 @@ func main() {
 
 	ctx = logging.WithLogger(ctx, logger)
 
-	database, err := database.NewPostgresDB(config.Database)
+	db, err := database.NewPostgresDB(config.Database)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	sequenceRepo := sequence.NewPostgresRepository(database)
+	if err := database.RunMigrations(db); err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	sequenceRepo := sequence.NewPostgresRepository(db)
 	sequenceService := sequence.NewService(sequenceRepo)
 	server := http.NewServer(sequenceService)
 

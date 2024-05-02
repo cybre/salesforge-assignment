@@ -78,7 +78,7 @@ const getSequenceQuery = `
 SELECT sequence.id, sequence.name, sequence.open_tracking_enabled, sequence.click_tracking_enabled, step.id as step_id, step.subject, step.content
 FROM sequence
 LEFT JOIN step ON sequence.id = step.sequence_id 
-WHERE sequence.id = $1;
+WHERE sequence.id = $1 ORDER BY step.id;
 `
 
 // GetSequence gets a sequence by ID.

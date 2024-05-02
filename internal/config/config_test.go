@@ -100,6 +100,8 @@ func TestLoadConfig(t *testing.T) {
 		os.Unsetenv("DATABASE_PORT")
 		os.Unsetenv("DATABASE_NAME")
 		os.Unsetenv("DATABASE_USER")
+		os.Unsetenv("DATABASE_PASSWORD")
+		os.Unsetenv("DATABASE_PASSWORD_FILE")
 		os.Remove("test_secret.txt")
 	}()
 
@@ -120,7 +122,16 @@ func TestLoadConfig(t *testing.T) {
 		t.Errorf("Expected %+v, but got %+v", expected, result)
 	}
 
-	// Test case 2: Missing environment variable
+	// Test case 2: using raw password
+	os.Unsetenv("DATABASE_PASSWORD_FILE")
+	os.Setenv("DATABASE_PASSWORD", "raw_password")
+
+	result = config.LoadConfig()
+	if result.Database.Password != "raw_password" {
+		t.Errorf("Expected password to be 'raw_password', but got '%s'", result.Database.Password)
+	}
+
+	// Test case 3: Missing environment variable
 	os.Unsetenv("DATABASE_HOST")
 
 	defer func() {

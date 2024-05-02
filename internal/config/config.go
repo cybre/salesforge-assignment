@@ -13,6 +13,13 @@ type Config struct {
 }
 
 func LoadConfig() Config {
+	var password string
+	if val, ok := os.LookupEnv("DATABASE_PASSWORD_FILE"); ok {
+		password = ReadSecret(val)
+	} else {
+		password = MustGetEnv("DATABASE_PASSWORD")
+	}
+
 	return Config{
 		Port: GetEnv("PORT", "3000"),
 		Database: database.Config{
@@ -20,7 +27,7 @@ func LoadConfig() Config {
 			Port:     MustGetEnv("DATABASE_PORT"),
 			Name:     MustGetEnv("DATABASE_NAME"),
 			User:     MustGetEnv("DATABASE_USER"),
-			Password: ReadSecret(MustGetEnv("DATABASE_PASSWORD_FILE")),
+			Password: password,
 		},
 	}
 }
