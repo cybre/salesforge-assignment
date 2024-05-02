@@ -119,4 +119,15 @@ func TestLoadConfig(t *testing.T) {
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, but got %+v", expected, result)
 	}
+
+	// Test case 2: Missing environment variable
+	os.Unsetenv("DATABASE_HOST")
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but got none")
+		}
+	}()
+
+	config.LoadConfig()
 }
