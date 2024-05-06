@@ -21,3 +21,4 @@ make run
 - To stop the containers: `make stop`
 - To clean up the project (remove containers, networks, and volumes): `make clean`
 - To run unit tests: `make test`
+- To run integration tests: `make integration-test`
